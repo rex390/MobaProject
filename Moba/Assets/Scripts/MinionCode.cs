@@ -85,11 +85,11 @@ public class MinionCode : MonoBehaviour {
         //setting up navigation and set up the starting path to take
         agent = GetComponent<NavMeshAgent>();
         goalPos = pathfindingList[startPath];
-
+        //check if this is the leader and if so then enable their navigation
         if(leader.gameObject == this.gameObject)
         {
-            GetComponent<NavMeshAgent>().enabled = true;
-            agent.destination = goalPos.position;         
+            GetComponent<NavMeshAgent>().enabled = true;           
+            agent.destination = goalPos.position;
         }
         //set a invoke to check if enemies are within range
         InvokeRepeating("EnemyInVision", 0.0f, 0.1f);
@@ -117,10 +117,16 @@ public class MinionCode : MonoBehaviour {
         //if the minion state is move then call the move command
         if(minionState == State.Move)
         {
+            //checks if the path needs to be changed if it has reached its destination
             PathUpdating();
             if(leader==this.gameObject)
             {               
-                //MinionMovement();
+                //MinionMovement(); RENAMED AND UPDATED FOR NEW MOVEMENT (PATHUPDATING)
+                if(this.GetComponent<NavMeshAgent>().enabled == false)
+                {
+                    //Debug.Log("if disabled navmesh agent then re-enabled");
+                    this.GetComponent<NavMeshAgent>().enabled = true;
+                }
             }
             else
             {
@@ -146,7 +152,7 @@ public class MinionCode : MonoBehaviour {
                 if(leader==this.gameObject)
                 {
                     this.GetComponent<NavMeshAgent>().enabled = true;
-                    agent.destination = goalPos.position;
+                    agent.destination  = goalPos.position;
                 }
             }           
         }     
@@ -198,18 +204,34 @@ public class MinionCode : MonoBehaviour {
 
         //makes the minions go to the right base based on their enemy color 
         float distanceFromPoint = Vector3.Distance(this.transform.position, pathfindingList[startPath].position);
-        if(distanceFromPoint<=1.4f)
+        if(distanceFromPoint<=2.3f)
         {
             //Debug.Log("Reached");
             if (minionSide == "Red")
             {
-                startPath--;
+                if(startPath!=0)
+                {
+                    startPath--;
+                    goalPos = pathfindingList[startPath];
+                }
+                else
+                {
+                    goalPos = GameObject.Find("BlueInhibitor").transform;
+                }
+                
             }
             if (minionSide == "Blue")
             {
-                startPath++;
-            }
-            goalPos = pathfindingList[startPath];
+                if (startPath != 3)
+                {
+                    startPath++;
+                    goalPos = pathfindingList[startPath];
+                }
+                else
+                {
+                    goalPos = GameObject.Find("RedInhibitor").transform;
+                }               
+            }           
             if(leader == this.gameObject)
             {
                 agent.destination = goalPos.position;
@@ -346,7 +368,9 @@ public class MinionCode : MonoBehaviour {
                         if (leader == this.gameObject)
                         {
                             this.GetComponent<NavMeshAgent>().enabled = true;
+                            //goalPos = pathfindingList[startPath];
                             agent.destination = goalPos.position;
+                            //agent.destination = goalPos.position;
                         }
                     }
                 }

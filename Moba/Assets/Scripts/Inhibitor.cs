@@ -163,11 +163,14 @@ public class Inhibitor : MonoBehaviour {
             counter = 0;
             foreach(GameObject leaderOfLane in leaders)
             {
-                if (leaders[counter].name == minion.name)
+                if(leaders[counter]!=null)
                 {
-                    minion.GetComponent<MinionCode>().SetLeader(leaders[counter]);
+                    if (leaders[counter].name == minion.name)
+                    {
+                        minion.GetComponent<MinionCode>().SetLeader(leaders[counter]);
+                    }
+                    counter++;
                 }
-                counter++;
             }           
         }
     }
