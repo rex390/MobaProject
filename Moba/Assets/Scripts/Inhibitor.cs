@@ -2,6 +2,24 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+public struct LaneRoute
+{
+    List<Transform> Lane;
+
+    public void Init()
+    {
+        Lane = new List<Transform>();
+    }
+    public void AddLane(Transform lane_)
+    {
+        Lane.Add(lane_);
+    }
+    public List<Transform> GetLane()
+    {
+        return Lane;
+    }
+}
+
 public class Inhibitor : MonoBehaviour {
 
     // Use this for initialization
@@ -11,7 +29,10 @@ public class Inhibitor : MonoBehaviour {
     GameObject[] leaders = new GameObject[3] ;
     float MinionSpawnStart = 5.0f;
     float MinionSpawnRepeatDelay = 20.0f;
-	void Start ()
+    //array List to hold all the routes for a lane 
+    LaneRoute[] Lanes = new LaneRoute[3];
+    //Lanes[0].
+    void Start ()
     {
         //just setting the color correct for inhibitor based on name
         if(this.name == "BlueInhibitor")
@@ -31,12 +52,30 @@ public class Inhibitor : MonoBehaviour {
                 spawnPoints.Add(item.gameObject);
             }
         }
+
+        //Set up the list of Paths CONTINUE ON FROM HERE FIX THE LANES ROUTE BEING INTIALISED
+        int laneCount = 0;
+        GameObject turretLane = GameObject.Find("TopPath");
+        SetUpLane(turretLane, laneCount);
+        laneCount++;
+        turretLane = GameObject.Find("BotPath");
+        SetUpLane(turretLane, laneCount);
+        laneCount++;
+        turretLane = GameObject.Find("MidPath");
+        SetUpLane(turretLane, laneCount);
         //invoke repeat the code to start spawning the minions after 5 seconds and repeat every 5 seconds       
         InvokeRepeating("StartMinionCreation", MinionSpawnStart, MinionSpawnRepeatDelay);
     }
 
-    // Update is called once per frame
-
+    // Set up lane variables
+    void SetUpLane(GameObject turretLane,int laneCount_)
+    {
+        Lanes[laneCount_].Init();
+        for (int countVar = 0; countVar < turretLane.transform.childCount; countVar++)
+        {
+            Lanes[laneCount_].AddLane(turretLane.transform.GetChild(countVar).transform);
+        }
+    }
     private void StartMinionCreation()
     {
         StartCoroutine(SpawnMinion("Top"));
@@ -56,11 +95,25 @@ public class Inhibitor : MonoBehaviour {
         
     }
 
-    private void CreateMinion(int minionNumber, GameObject spawnPoint,int minionSpawnNumber)
+    private void CreateMinion(int minionNumber, GameObject spawnPoint,int minionSpawnNumber, string minionLane)
     {
         int counter = 0;
         string Side = this.name.Remove(this.name.IndexOf('I'), 9);
         GameObject minion = Instantiate(Resources.Load("Prefabs/Minion"), spawnPoint.transform.position, Quaternion.identity, spawnPoint.transform) as GameObject;
+
+        //set up the pathfinding route minions will take
+        if(minionLane=="Top")
+        {
+            minion.GetComponent<MinionCode>().SetPathList(Lanes[0].GetLane());
+        }
+        else if(minionLane=="Bot")
+        {
+            minion.GetComponent<MinionCode>().SetPathList(Lanes[1].GetLane());
+        }
+        else if(minionLane == "Mid")
+        {
+            minion.GetComponent<MinionCode>().SetPathList(Lanes[2].GetLane());
+        }
         //make its name equal to the side it is on
         minion.name = Side + " " + spawnPoint.name;
         //change color to the correct side color
@@ -142,7 +195,7 @@ public class Inhibitor : MonoBehaviour {
                  for(int minionNumber =0;minionNumber < Wave; minionNumber++)
                 {                    
                     //spawn a minion
-                    CreateMinion(minionNumber, spawnPoint,minionNumber);
+                    CreateMinion(minionNumber, spawnPoint,minionNumber,Lane);
                     yield return new WaitForSeconds(0.5f); //delay the next spawn of minion by 0.5 seconds
                 }      
             }                     
