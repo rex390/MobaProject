@@ -5,10 +5,10 @@ using UnityEngine.UI;
 using UnityEngine.AI;
 using System.Threading;
 
-
-enum Type {Melee,Ranged,Cannon}
+//CHANGE TO NOT PUBLIC WHEN DONE - PUBLIC WAS FOR TESTING WHY BUGS MAY OCCUR
+public enum Type {Melee,Ranged,Cannon}
 public enum Lane { Bot,Mid,Top}
-enum State { Move,Attack}
+public enum State { Move,Attack}
 
 //~(1 << 8) //All but 8
 
@@ -20,9 +20,9 @@ public class MinionCode : MonoBehaviour {
 
     // Use this for initialization
     string minionSide;
-    Type minionType;
+    public Type minionType;
     LayerMask EnemylayerMask; //layer for the minion to be looking for
-    State minionState; //what is the state of the minion
+    public State minionState; //what is the state of the minion
     float maxHealth = 100.0f;
     float health;
     int damage = 20;
@@ -125,8 +125,10 @@ public class MinionCode : MonoBehaviour {
                 if(this.GetComponent<NavMeshAgent>().enabled == false)
                 {
                     //Debug.Log("if disabled navmesh agent then re-enabled");
-                    this.GetComponent<NavMeshAgent>().enabled = true;
+                    this.GetComponent<NavMeshAgent>().enabled = true;                  
                 }
+                agent.destination = goalPos.position;
+
             }
             else
             {
@@ -202,11 +204,12 @@ public class MinionCode : MonoBehaviour {
     private void PathUpdating()
     {
 
-        //makes the minions go to the right base based on their enemy color 
+        //get the distance we are from the checkpoint
         float distanceFromPoint = Vector3.Distance(this.transform.position, pathfindingList[startPath].position);
+        //if the distance small enough
         if(distanceFromPoint<=2.3f)
         {
-            //Debug.Log("Reached");
+            
             if (minionSide == "Red")
             {
                 if(startPath!=0)
@@ -266,8 +269,8 @@ public class MinionCode : MonoBehaviour {
                 //Invoke("AttackSent", 0.2f); //acts as the animation delay of a minion attacking
             }
         }
-        //if the minion is ranged, move it within ranged attack distance then fire a projectile that will go to the target
-        else if (minionType == Type.Ranged)
+        //if the minion is ranged, move it within ranged attack distance then fire a projectile that will go to the target (CANNON ADDED HERE TO FIX A BUG BUT MAYBE MAKE A DIFFERENT TARGETING SINCE A DIFFERENT MINION (CANNON STILL NOT FIRING)
+        else if ((minionType == Type.Ranged) || (minionType == Type.Cannon))
         {
             if (distance > 1.2f)
             {
