@@ -29,13 +29,15 @@ public class RangedMinionBullet : MonoBehaviour {
             Destroy(this.gameObject);
         }
     }
-    //MAYBE CHANGE TO TARGET INSTEAD OF MINION THAT IS SHOOTING SO WE DONT KEEP TURNING OFF RANGE FIRST
+    //checks if target is destroyed and if so then stop firing 
     void OnDestroy()
     {
-        if(minionShooting!=null)
+        if(target==null)
         {
-            Debug.Log("turned off bullet");
-            minionShooting.GetComponent<MinionCode>().TurnOffFire();
+            if(minionShooting != null)
+            {
+                minionShooting.GetComponent<MinionCode>().TurnOffFire();
+            }
         }
     }
     //when the bullet collides with the enemy then destroy bullet which also remove the bullet script

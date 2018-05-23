@@ -23,12 +23,15 @@ public class MinionCode : MonoBehaviour {
     public Type minionType;
     LayerMask EnemylayerMask; //layer for the minion to be looking for
     public State minionState; //what is the state of the minion
+    //stats for minions
     float maxHealth = 100.0f;
     float health;
     int damage = 20;
+
     public GameObject target;
     bool RangedFire = false;
     GameObject healthBar;
+    //pathfinding variables
     Lane minionLane;
     NavMeshAgent agent;
     Transform goalPos;
@@ -242,28 +245,12 @@ public class MinionCode : MonoBehaviour {
             //if this minion is the leader then set it to go to the new goal we set up           
             if(leader == this.gameObject)
             {
-                agent.destination = goalPos.position;
-                ////REMOVING MAYBE////////
-                //if navigation was off then turn it back on
-                //if (this.GetComponent<NavMeshAgent>().enabled == false)
-                //{
-                //    //Debug.Log("if disabled navmesh agent then re-enabled");
-                //    this.GetComponent<NavMeshAgent>().enabled = true;
-                //}
+                if(this.GetComponent<NavMeshAgent>().enabled == true)
+                {
+                    agent.destination = goalPos.position;
+                }
             }
         }
-        ////OLD CODE REMOVING ONCE PATHFINDING BUGFIXED////////
-        //if (minionSide == "Red")
-        //{
-        //    //agent.destination = goalPos.position;
-        //    //this.transform.position = Vector3.MoveTowards(this.transform.position, GameObject.Find("BlueInhibitor").transform.position, 1.0f * Time.deltaTime);
-        //}
-        //if (minionSide == "Blue")
-        //{
-        //    //agent.destination = goalPos.position;
-        //    //this.transform.position = Vector3.MoveTowards(this.transform.position, GameObject.Find("RedInhibitor").transform.position, 1.0f * Time.deltaTime);
-        //}
-        //////////////////////////////////
     }
     //code which runs when the minion has found a target
     private void Attacking()
@@ -280,7 +267,6 @@ public class MinionCode : MonoBehaviour {
             else if (distance <= 0.2f)
             {
                 MeleeAttackSent();
-                //Invoke("AttackSent", 0.2f); //acts as the animation delay of a minion attacking
             }
         }
         //if the minion is ranged, move it within ranged attack distance then fire a projectile that will go to the target (CANNON ADDED HERE TO FIX A BUG BUT MAYBE MAKE A DIFFERENT TARGETING SINCE A DIFFERENT MINION (CANNON STILL NOT FIRING)
@@ -300,7 +286,7 @@ public class MinionCode : MonoBehaviour {
                     this.GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
                     this.GetComponent<Rigidbody>().Sleep();
                     RangedFire = true;//make it true so minion is shotting correctly
-                    InvokeRepeating("RangedAttackSent", 0.0f,10.0f); //make the delay between each shot 10 seconds
+                    InvokeRepeating("RangedAttackSent", 0.0f,1.0f); //make the delay between each shot 10 seconds
                 }
             }
         }
@@ -309,18 +295,19 @@ public class MinionCode : MonoBehaviour {
     public void TurnOffFire()
     {
         RangedFire = false;
+        CancelInvoke("RangedAttackSent");
     }
     //creates the ranged bullet and sets the target and the damage and the owner of the shot
     private void RangedAttackSent()
     {
-        //for ranged minion then make this bullet
-        if((minionType == Type.Ranged) || (minionType == Type.Cannon))
-        {
+        //if ranged minion or cannon then make this bullet
+        //if((minionType == Type.Ranged) || (minionType == Type.Cannon))
+        //{
             GameObject bullet = Instantiate(Resources.Load("Prefabs/Bullet"), this.transform.position, Quaternion.identity, this.transform) as GameObject;
             bullet.name = "RangedShot";
-            //add script to the bullet that controls its
+            //add script to the bullet that controls it
             bullet.AddComponent<RangedMinionBullet>().Initialise(damage,target,this.gameObject);
-        }
+        //}
         
     }
     //attack the target and decrease their health

@@ -26,12 +26,11 @@ public class Inhibitor : MonoBehaviour {
     int counter = 1; //represent which wave ( every 3 is cannon)
     int hp = 1000; //represent the inhibitor total hp (test value is 100 for now)
     List<GameObject> spawnPoints; //the points the minions will spawn from
-    GameObject[] leaders = new GameObject[3] ;
+    GameObject[] leaders = new GameObject[3] ; // the leaders for each lane when minion wave is created
     float MinionSpawnStart = 5.0f;
     float MinionSpawnRepeatDelay = 20.0f;
     //array List to hold all the routes for a lane 
     LaneRoute[] Lanes = new LaneRoute[3];
-    //Lanes[0].
     void Start ()
     {
         //just setting the color correct for inhibitor based on name
@@ -54,15 +53,20 @@ public class Inhibitor : MonoBehaviour {
         }
 
         //Set up the list of Paths CONTINUE ON FROM HERE FIX THE LANES ROUTE BEING INTIALISED
-        int laneCount = 0;
-        GameObject turretLane = GameObject.Find("TopPath");
-        SetUpLane(turretLane, laneCount);
-        laneCount++;
-        turretLane = GameObject.Find("BotPath");
-        SetUpLane(turretLane, laneCount);
-        laneCount++;
-        turretLane = GameObject.Find("MidPath");
-        SetUpLane(turretLane, laneCount);
+        //int laneCount = 0;
+        //GameObject turretLane = GameObject.Find("TopPath");
+        //SetUpLane(turretLane, laneCount);
+        //laneCount++;
+        //turretLane = GameObject.Find("BotPath");
+        //SetUpLane(turretLane, laneCount);
+        //laneCount++;
+        //turretLane = GameObject.Find("MidPath");
+        //SetUpLane(turretLane, laneCount);
+
+
+        SetUpLane(GameObject.Find("TopPath"),0);
+        SetUpLane(GameObject.Find("BotPath"),1);
+        SetUpLane(GameObject.Find("MidPath"),2);
         //invoke repeat the code to start spawning the minions after 5 seconds and repeat every 5 seconds       
         InvokeRepeating("StartMinionCreation", MinionSpawnStart, MinionSpawnRepeatDelay);
     }
@@ -176,7 +180,6 @@ public class Inhibitor : MonoBehaviour {
     }
     IEnumerator SpawnMinion(string Lane)
     {
-        //yield return new WaitForSeconds(3.0f);
         //this represents how many minions are in the wave
         int Wave;
         //if it is not the third wave then there are 6 minions in the wave else spawn a cannon minion alongside the 6 minions 
