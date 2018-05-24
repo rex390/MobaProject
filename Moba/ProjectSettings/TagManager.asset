@@ -7,6 +7,8 @@ TagManager:
   - Timer
   - CameraController
   - SpawnPoint
+  - MenuIcon
+  - ChampionContainerUI
   layers:
   - Default
   - TransparentFX

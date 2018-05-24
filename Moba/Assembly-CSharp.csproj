@@ -52,9 +52,11 @@
   </ItemGroup>
   <ItemGroup>
      <Compile Include="Assets\Scripts\CameraControl.cs" />
+     <Compile Include="Assets\Scripts\CharacterUIPanel.cs" />
      <Compile Include="Assets\Scripts\GameManager.cs" />
      <Compile Include="Assets\Scripts\Inhibitor.cs" />
      <Compile Include="Assets\Scripts\MinionCode.cs" />
+     <Compile Include="Assets\Scripts\Player.cs" />
      <Compile Include="Assets\Scripts\RangedMinionBullet.cs" />
      <Compile Include="Assets\Scripts\Timer.cs" />
  <Reference Include="UnityEngine.UI">
