@@ -58,7 +58,7 @@ public class CameraControl : MonoBehaviour {
 
     private void moveCamera()
     {
-        if (Input.GetMouseButton(0))
+        if (Input.GetMouseButton(1))
         {
             Diference = (Camera.main.ScreenToWorldPoint(Input.mousePosition)) - Camera.main.transform.position;
             if (Drag == false)

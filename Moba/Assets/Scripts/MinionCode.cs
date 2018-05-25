@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.AI;
 using System.Threading;
 
-enum Type {Melee,Ranged,Cannon}
+//CHANGE TO NOT PUBLIC WHEN DONE - PUBLIC WAS FOR TESTING WHY BUGS MAY OCCUR
+public enum Type {Melee,Ranged,Cannon}
 public enum Lane { Bot,Mid,Top}
-enum State { Move,Attack}
+public enum State { Move,Attack}
 
 //~(1 << 8) //All but 8
 
@@ -18,30 +20,43 @@ public class MinionCode : MonoBehaviour {
 
     // Use this for initialization
     string minionSide;
-    Type minionType;
+    public Type minionType;
     LayerMask EnemylayerMask; //layer for the minion to be looking for
-    State minionState; //what is the state of the minion
+    public State minionState; //what is the state of the minion
+    //stats for minions
     float maxHealth = 100.0f;
     float health;
     int damage = 20;
+
     public GameObject target;
     bool RangedFire = false;
     GameObject healthBar;
+    //pathfinding variables
     Lane minionLane;
-
+    NavMeshAgent agent;
+    Transform goalPos;
     Vector3 targetPosition;
+    public int startPath;
 
-
-    //TEST LEADER PART and position list
+    //leader system variables
     public GameObject leader;
     LayerMask TeamlayerMask; //layer for the minion to be looking for his team
-    bool findNewLeader = false;
+    bool findNewLeader = false; //boolean to control when we need to find a new leader
+    //the pathfinding checkpoint list 
+    List<Transform> pathfindingList = new List<Transform>();
+    //setter for the leader
     public void SetLeader(GameObject leaderOfMinion)
     {
         leader = leaderOfMinion;
     }
+    //setter for the checkpoint list
+    public void SetPathList(List<Transform> listPath)
+    {
+        pathfindingList = listPath;
+    }
     void Start()
     {
+        //set up the lane to which the minion belongs to
         string thisLane = this.name.Remove(0, this.name.IndexOf(' ') + 1);
         if (thisLane == "Mid")
         {
@@ -61,21 +76,33 @@ public class MinionCode : MonoBehaviour {
         minionSide = this.name.Remove(this.name.IndexOf(' ')); //set the side of the minion by cutting part of the original gameobjectse name
         if (minionSide == "Red")
         {
+            startPath = 3; //set to 3 for blue side as their checkpoints begin from the start of the checkpoint list
             targetPosition = GameObject.Find("BlueInhibitor").transform.position;
             EnemylayerMask = 1 << LayerMask.NameToLayer("Blue"); //searching only for layers which is blue and ignores rest
             TeamlayerMask = 1 << LayerMask.NameToLayer("Red"); //searching only for layers which is blue and ignores rest
         }
         if (minionSide == "Blue")
         {
+            startPath = 0; //set to 0 for blue side as their checkpoints begin from the start of the checkpoint list
             targetPosition = GameObject.Find("RedInhibitor").transform.position;
             EnemylayerMask = 1 << LayerMask.NameToLayer("Red"); //searching only for layers which is red and ignores rest
             TeamlayerMask = 1 << LayerMask.NameToLayer("Blue"); //searching only for layers which is blue and ignores rest
         }
-
+        //setting up navigation and set up the starting path to take
+        agent = GetComponent<NavMeshAgent>();
+        goalPos = pathfindingList[startPath];
+        //check if this is the leader and if so then enable their navigation
+        if(leader.gameObject == this.gameObject)
+        {
+            GetComponent<NavMeshAgent>().enabled = true;           
+            agent.destination = goalPos.position;
+        }
+        //set a invoke to check if enemies are within range
         InvokeRepeating("EnemyInVision", 0.0f, 0.1f);
     }
     void Update()
     {
+        //if this minion is not a leader and the leader is not set then find a new leader
         if(leader!= this.gameObject)
         {
             if(leader ==null)
@@ -96,13 +123,19 @@ public class MinionCode : MonoBehaviour {
         //if the minion state is move then call the move command
         if(minionState == State.Move)
         {
+            //checks if the path needs to be changed if it has reached its destination
+            PathUpdating();
             if(leader==this.gameObject)
-            {
-                MinionMovement();
+            {               
+                //MinionMovement(); RENAMED AND UPDATED FOR NEW MOVEMENT (PATHUPDATING)
             }
             else
             {
-                this.transform.position = Vector3.MoveTowards(this.transform.position, leader.transform.position, 1.0f * Time.deltaTime);
+                //makes sure we only follow the leader if he is still alive
+                if(leader!=null)
+                {
+                    this.transform.position = Vector3.MoveTowards(this.transform.position, leader.transform.position, 1.0f * Time.deltaTime);
+                }                
             }
         }
         //if the minion state is attack then attack
@@ -117,6 +150,12 @@ public class MinionCode : MonoBehaviour {
             else
             {
                 minionState = State.Move;
+                //since the target has died we set the navigation and goal point back on
+                if(leader==this.gameObject)
+                {
+                    this.GetComponent<NavMeshAgent>().enabled = true;
+                    agent.destination  = goalPos.position;
+                }
             }           
         }     
     }
@@ -141,6 +180,7 @@ public class MinionCode : MonoBehaviour {
                     if(minionLane == colliders[colliderArray].GetComponent<MinionCode>().GetLane())
                     {
                         Distance = Vector3.Distance(colliders[colliderArray].transform.position, targetPosition); // the distance will be calculated to this minion and target
+                        //if the distance is less than the minDistance then make that the new leader ( repeat process until all the colliders have been gone through and we have the minion with the shortest distance to enemy base as leader)
                         if (Distance < minDistance)
                         {
                             minDistance = Distance;
@@ -161,18 +201,55 @@ public class MinionCode : MonoBehaviour {
     {
         minionType = (Type)type_;
     }
-
-    private void MinionMovement()
+    //Replaced by navmesh movement
+    private void PathUpdating()
     {
 
-        //makes the minions go to the right base based on their enemy color 
-        if (minionSide == "Red")
+        //get the distance we are from the checkpoint
+        float distanceFromPoint = Vector3.Distance(this.transform.position, pathfindingList[startPath].position);
+        //if the distance small enough then we can move onto next checkpoint
+        if(distanceFromPoint<=2.3f)
         {
-            this.transform.position = Vector3.MoveTowards(this.transform.position, GameObject.Find("BlueInhibitor").transform.position, 1.0f * Time.deltaTime);
-        }
-        if (minionSide == "Blue")
-        {
-            this.transform.position = Vector3.MoveTowards(this.transform.position, GameObject.Find("RedInhibitor").transform.position, 1.0f * Time.deltaTime);
+            //the checkpoint start at different point in the list based on which side ( red is end of list ( 3 ) and blue is start of list ( 0 ) )
+            if (minionSide == "Red")
+            {
+                //if we havent hit end of our checkpoints then keep on goin thru the list
+                if(startPath!=0)
+                {
+                    startPath--;
+                    //set the goal point to the new checkpoint
+                    goalPos = pathfindingList[startPath];
+                }
+                else
+                {
+                    //since we have went through the whole checkpoint list then go to the enemy base
+                    goalPos = GameObject.Find("BlueInhibitor").transform;
+                }
+                
+            }
+            if (minionSide == "Blue")
+            {
+                //if we havent hit end of our checkpoints then keep on goin thru the list
+                if (startPath != 3)
+                {
+                    startPath++;
+                    //set the goal point to the new checkpoint
+                    goalPos = pathfindingList[startPath];
+                }
+                else
+                {
+                    //since we have went through the whole checkpoint list then go to the enemy base
+                    goalPos = GameObject.Find("RedInhibitor").transform;
+                }               
+            }
+            //if this minion is the leader then set it to go to the new goal we set up           
+            if(leader == this.gameObject)
+            {
+                if(this.GetComponent<NavMeshAgent>().enabled == true)
+                {
+                    agent.destination = goalPos.position;
+                }
+            }
         }
     }
     //code which runs when the minion has found a target
@@ -190,11 +267,10 @@ public class MinionCode : MonoBehaviour {
             else if (distance <= 0.2f)
             {
                 MeleeAttackSent();
-                //Invoke("AttackSent", 0.2f); //acts as the animation delay of a minion attacking
             }
         }
-        //if the minion is ranged, move it within ranged attack distance then fire a projectile that will go to the target
-        else if (minionType == Type.Ranged)
+        //if the minion is ranged, move it within ranged attack distance then fire a projectile that will go to the target (CANNON ADDED HERE TO FIX A BUG BUT MAYBE MAKE A DIFFERENT TARGETING SINCE A DIFFERENT MINION (CANNON STILL NOT FIRING)
+        else if ((minionType == Type.Ranged) || (minionType == Type.Cannon))
         {
             if (distance > 1.2f)
             {
@@ -203,10 +279,14 @@ public class MinionCode : MonoBehaviour {
             else if (distance <= 1.2f)
             {
                 //this will stop the minion rapid firing shots which was one of the issues 
-                if(RangedFire==false)
+                if (RangedFire==false)
                 {
+                    //we set the velocity and angular velocity to zero to make sure the minion dont drift backwards and then sleep it to make sure they stay in place when first in contact of enemy
+                    this.GetComponent<Rigidbody>().velocity = Vector3.zero;
+                    this.GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
+                    this.GetComponent<Rigidbody>().Sleep();
                     RangedFire = true;//make it true so minion is shotting correctly
-                    InvokeRepeating("RangedAttackSent", 0.0f,10.0f); //make the delay between each shot 10 seconds
+                    InvokeRepeating("RangedAttackSent", 0.0f,1.0f); //make the delay between each shot 10 seconds
                 }
             }
         }
@@ -215,17 +295,19 @@ public class MinionCode : MonoBehaviour {
     public void TurnOffFire()
     {
         RangedFire = false;
+        CancelInvoke("RangedAttackSent");
     }
     //creates the ranged bullet and sets the target and the damage and the owner of the shot
     private void RangedAttackSent()
     {
-        //for ranged minion then make this bullet
-        if(minionType == Type.Ranged)
-        {
+        //if ranged minion or cannon then make this bullet
+        //if((minionType == Type.Ranged) || (minionType == Type.Cannon))
+        //{
             GameObject bullet = Instantiate(Resources.Load("Prefabs/Bullet"), this.transform.position, Quaternion.identity, this.transform) as GameObject;
             bullet.name = "RangedShot";
+            //add script to the bullet that controls it
             bullet.AddComponent<RangedMinionBullet>().Initialise(damage,target,this.gameObject);
-        }
+        //}
         
     }
     //attack the target and decrease their health
@@ -273,6 +355,7 @@ public class MinionCode : MonoBehaviour {
                 if (colliders.Length > 0)
                 {                   
                     minionState = State.Attack; //change state to attack since no enemies anymore ( might be altered to instead check if no enemies are present)
+                    GetComponent<NavMeshAgent>().enabled=false;
                     //make it attack the closest target in the array
                     if (minionSide == "Red")
                     {
@@ -291,6 +374,12 @@ public class MinionCode : MonoBehaviour {
                     if(minionState == State.Attack)
                     {
                         minionState = State.Move;
+                        //since no enemy were found reset the navigation back on and also set the minion to go to the goal point
+                        if (leader == this.gameObject)
+                        {
+                            this.GetComponent<NavMeshAgent>().enabled = true;                         
+                            agent.destination = goalPos.position; 
+                        }
                     }
                 }
             }
